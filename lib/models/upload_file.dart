@@ -1,3 +1,34 @@
+class UploadStats {
+  final int total;
+  final int foto;
+  final int video;
+  final int pengirim;
+  final int totalSize;
+  final List<Map<String, dynamic>> rekap;
+  final List<String> pengirimList;
+
+  UploadStats({
+    required this.total,
+    required this.foto,
+    required this.video,
+    required this.pengirim,
+    required this.totalSize,
+    required this.rekap,
+    required this.pengirimList,
+  });
+
+  factory UploadStats.fromJson(Map<String, dynamic> j) {
+    return UploadStats(
+      total: j['total'] ?? 0,
+      foto: j['foto'] ?? 0,
+      video: j['video'] ?? 0,
+      pengirim: j['pengirim'] ?? 0,
+      totalSize: j['total_size'] ?? 0,
+      rekap: List<Map<String, dynamic>>.from(j['rekap'] ?? []),
+      pengirimList: List<String>.from(j['pengirim_list'] ?? []),
+    );
+  }
+}
 class UploadFile {
   final int id;
   final String nama;
