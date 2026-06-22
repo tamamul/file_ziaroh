@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'constants.dart';
 import 'services/pref_service.dart';
 import 'screens/upload_screen.dart';
@@ -34,20 +36,50 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _tab = 0;
+  final _uploadKey = GlobalKey<UploadScreenState>();
 
-  final List<Widget> _screens = [];
+  // Screens
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    _screens.addAll([
-      const UploadScreen(),
-      GalleryScreen(
-        myFilesOnly: true,
-        myNama: PrefService.nama,
-      ),
+    _screens = [
+      UploadScreen(key: _uploadKey),
+      GalleryScreen(myFilesOnly: true, myNama: PrefService.nama),
       const GalleryScreen(myFilesOnly: false),
-    ]);
+    ];
+
+    // Terima file saat app sudah buka (dari share WA dll)
+    ReceiveSharingIntent.instance.getMediaStream().listen((files) {
+      if (files.isNotEmpty) _handleSharedFiles(files);
+    });
+
+    // Terima file saat app pertama kali dibuka via share
+    ReceiveSharingIntent.instance.getInitialMedia().then((files) {
+      if (files.isNotEmpty) _handleSharedFiles(files);
+    });
+  }
+
+  void _handleSharedFiles(List<SharedMediaFile> shared) {
+    final files = shared
+        .where((f) => f.path.isNotEmpty)
+        .map((f) => File(f.path))
+        .where((f) => f.existsSync())
+        .toList();
+
+    if (files.isEmpty) return;
+
+    // Pindah ke tab Upload
+    setState(() => _tab = 0);
+
+    // Tambah file ke UploadScreen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _uploadKey.currentState?.addSharedFiles(files);
+    });
+
+    // Reset intent supaya tidak diproses ulang
+    ReceiveSharingIntent.instance.reset();
   }
 
   @override
@@ -71,7 +103,6 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tab,
         onTap: (i) {
-          // Refresh "Riwayat Saya" saat tab dipilih supaya nama terupdate
           if (i == 1) {
             _screens[1] = GalleryScreen(myFilesOnly: true, myNama: PrefService.nama);
           }
