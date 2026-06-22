@@ -40,13 +40,27 @@ class UploadScreenState extends State<UploadScreen> {
   }
 
   @override
-  void dispose() {
-    _namaCtrl.dispose();
-    _ketCtrl.dispose();
-    super.dispose();
-  }
+void dispose() {
+  _namaCtrl.dispose();
+  _ketCtrl.dispose();
+  super.dispose();
+}
 
-  String get _activeDivisi => _customDivisi ? _divisiCustom : _divisi;
+void addSharedFiles(List<File> files) {
+  if (!mounted) return;
+
+  setState(() {
+    selectedFiles.addAll(
+      files.where(
+        (newFile) => !selectedFiles.any(
+          (existing) => existing.path == newFile.path,
+        ),
+      ),
+    );
+  });
+}
+
+String get _activeDivisi => _customDivisi ? _divisiCustom : _divisi;
 
   String _formatBytes(int b) {
     if (b >= 1073741824) return '${(b / 1073741824).toStringAsFixed(1)} GB';
