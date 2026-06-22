@@ -7,6 +7,7 @@ import '../constants.dart';
 import '../services/api_service.dart';
 import '../services/pref_service.dart';
 import '../widgets/app_widgets.dart';
+import '../models/upload_model.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
