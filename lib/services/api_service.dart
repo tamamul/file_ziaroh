@@ -17,6 +17,7 @@ class ApiService {
     sendTimeout: const Duration(minutes: 10),
   ));
 
+  // ── Upload ──────────────────────────────────────────────────────
   static Future<UploadResult> uploadFile({
     required File file,
     required String nama,
@@ -32,23 +33,13 @@ class ApiService {
         'keterangan': keterangan,
         'file': await MultipartFile.fromFile(file.path, filename: fname),
       });
-
-      final res = await _dio.post(
-        AppConstants.uploadUrl,
-        data: form,
-        onSendProgress: onProgress,
-      );
-
+      final res = await _dio.post(AppConstants.uploadUrl, data: form, onSendProgress: onProgress);
       final data = res.data as Map<String, dynamic>;
-      return UploadResult(
-        success: data['success'] == true,
-        message: data['message'] ?? '',
-        filename: fname,
-      );
+      return UploadResult(success: data['success'] == true, message: data['message'] ?? '', filename: fname);
     } on DioException catch (e) {
       String msg = 'Koneksi gagal';
       if (e.type == DioExceptionType.connectionTimeout) msg = 'Timeout koneksi';
-      if (e.type == DioExceptionType.sendTimeout) msg = 'Timeout upload (file terlalu besar?)';
+      if (e.type == DioExceptionType.sendTimeout) msg = 'Timeout upload';
       if (e.response != null) msg = 'Server error ${e.response?.statusCode}';
       return UploadResult(success: false, message: msg);
     } catch (e) {
@@ -56,20 +47,18 @@ class ApiService {
     }
   }
 
+  // ── List files ──────────────────────────────────────────────────
   static Future<List<UploadFile>> getFiles({
     String? nama, String? divisi, String? tipe,
     int limit = 50, int offset = 0,
   }) async {
     try {
-      final params = <String, dynamic>{
-        'action': 'list',
-        'limit': limit,
-        'offset': offset,
+      final res = await _dio.get(AppConstants.apiUrl, queryParameters: {
+        'action': 'list', 'limit': limit, 'offset': offset,
         if (nama != null && nama.isNotEmpty) 'nama': nama,
         if (divisi != null && divisi.isNotEmpty) 'divisi': divisi,
         if (tipe != null && tipe.isNotEmpty) 'tipe': tipe,
-      };
-      final res = await _dio.get(AppConstants.apiUrl, queryParameters: params);
+      });
       final data = res.data as Map<String, dynamic>;
       if (data['success'] == true) {
         return (data['data'] as List).map((e) => UploadFile.fromJson(e)).toList();
@@ -78,6 +67,7 @@ class ApiService {
     return [];
   }
 
+  // ── Stats ───────────────────────────────────────────────────────
   static Future<UploadStats?> getStats() async {
     try {
       final res = await _dio.get(AppConstants.apiUrl, queryParameters: {'action': 'stats'});
@@ -85,5 +75,50 @@ class ApiService {
       if (data['success'] == true) return UploadStats.fromJson(data['data']);
     } catch (_) {}
     return null;
+  }
+
+  // ── Delete ──────────────────────────────────────────────────────
+  static Future<bool> deleteFile(int id) async {
+    try {
+      final res = await _dio.get(AppConstants.apiUrl, queryParameters: {'action': 'delete', 'id': id});
+      final data = res.data as Map<String, dynamic>;
+      return data['success'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── Rename ──────────────────────────────────────────────────────
+  static Future<String?> renameFile(int id, String namaBaru) async {
+    try {
+      final res = await _dio.get(AppConstants.apiUrl, queryParameters: {
+        'action': 'rename', 'id': id, 'nama_baru': namaBaru,
+      });
+      final data = res.data as Map<String, dynamic>;
+      if (data['success'] == true) return data['nama_baru'] as String?;
+    } catch (_) {}
+    return null;
+  }
+
+  // ── Clear all thumbnail cache ────────────────────────────────────
+  static Future<String> clearCache() async {
+    try {
+      final res = await _dio.get(AppConstants.apiUrl, queryParameters: {'action': 'clear_cache'});
+      final data = res.data as Map<String, dynamic>;
+      return data['message'] ?? 'Selesai';
+    } catch (_) {
+      return 'Gagal clear cache';
+    }
+  }
+
+  // ── Clear single thumbnail cache ─────────────────────────────────
+  static Future<bool> clearCacheOne(int id) async {
+    try {
+      final res = await _dio.get(AppConstants.apiUrl, queryParameters: {'action': 'clear_cache_one', 'id': id});
+      final data = res.data as Map<String, dynamic>;
+      return data['success'] == true;
+    } catch (_) {
+      return false;
+    }
   }
 }
