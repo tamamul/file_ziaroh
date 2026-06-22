@@ -10,9 +10,7 @@ class GoldDivider extends StatelessWidget {
     height: 1,
     margin: const EdgeInsets.symmetric(vertical: 12),
     decoration: const BoxDecoration(
-      gradient: LinearGradient(colors: [
-        Colors.transparent, AppTheme.gold, Colors.transparent,
-      ]),
+      gradient: LinearGradient(colors: [Colors.transparent, AppTheme.gold, Colors.transparent]),
     ),
   );
 }
@@ -28,11 +26,11 @@ class StatCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: AppTheme.greenRim.withOpacity(0.5)),
     ),
-    child: Column(children: [
+    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Text(emoji, style: const TextStyle(fontSize: 22)),
       const SizedBox(height: 4),
-      Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-      Text(label, style: const TextStyle(color: Color(0xFF5A8A6A), fontSize: 11)),
+      Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+      Text(label, style: const TextStyle(color: Color(0xFF5A8A6A), fontSize: 10)),
     ]),
   );
 }
@@ -61,14 +59,17 @@ class DivisiChip extends StatelessWidget {
   );
 }
 
+// ── FileCard dengan thumbnail dari API ──────────────────────────────
 class FileCard extends StatelessWidget {
   final UploadFile file;
   final VoidCallback onTap;
-  const FileCard({super.key, required this.file, required this.onTap});
+  final VoidCallback? onLongPress;
+  const FileCard({super.key, required this.file, required this.onTap, this.onLongPress});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
+    onLongPress: onLongPress,
     child: Container(
       decoration: BoxDecoration(
         color: AppTheme.greenCard,
@@ -76,37 +77,58 @@ class FileCard extends StatelessWidget {
         border: Border.all(color: AppTheme.greenRim.withOpacity(0.4)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Thumbnail
+        // ── Thumbnail ──
         Expanded(
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: Stack(fit: StackFit.expand, children: [
-              if (file.isPhoto)
+              // Pakai thumb_url kalau ada, fallback ke url asli (foto), atau icon (video)
+              if (file.hasThumb)
+                CachedNetworkImage(
+                  imageUrl: file.thumbUrl!,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => _shimmer(),
+                  errorWidget: (_, __, ___) => _fallbackWidget(),
+                )
+              else if (file.isPhoto)
                 CachedNetworkImage(
                   imageUrl: file.url,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: AppTheme.greenMid,
-                    child: const Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2))),
-                  errorWidget: (_, __, ___) => Container(color: AppTheme.greenMid,
-                    child: const Center(child: Text('📷', style: TextStyle(fontSize: 28)))),
+                  placeholder: (_, __) => _shimmer(),
+                  errorWidget: (_, __, ___) => _fallbackWidget(),
                 )
               else
-                Container(color: AppTheme.greenMid,
-                  child: const Center(child: Text('🎬', style: TextStyle(fontSize: 28)))),
+                _fallbackWidget(),
+
+              // Play icon overlay untuk video
               if (file.isVideo)
                 Center(child: Container(
-                  width: 36, height: 36,
+                  width: 38, height: 38,
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     shape: BoxShape.circle,
                     border: Border.all(color: AppTheme.gold, width: 1.5),
                   ),
-                  child: const Icon(Icons.play_arrow, color: AppTheme.gold, size: 20),
+                  child: const Icon(Icons.play_arrow, color: AppTheme.gold, size: 22),
+                )),
+
+              // Badge tipe
+              Positioned(top: 6, right: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    file.isPhoto ? '📷' : file.isVideo ? '🎬' : '📄',
+                    style: const TextStyle(fontSize: 10),
+                  ),
                 )),
             ]),
           ),
         ),
-        // Info
+        // ── Info ──
         Padding(
           padding: const EdgeInsets.all(8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -116,10 +138,10 @@ class FileCard extends StatelessWidget {
             const SizedBox(height: 3),
             Row(children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppTheme.gold.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(file.divisi, style: const TextStyle(color: AppTheme.gold, fontSize: 9)),
               ),
@@ -133,6 +155,22 @@ class FileCard extends StatelessWidget {
         ),
       ]),
     ),
+  );
+
+  Widget _shimmer() => Container(
+    color: AppTheme.greenMid,
+    child: const Center(child: SizedBox(
+      width: 20, height: 20,
+      child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2),
+    )),
+  );
+
+  Widget _fallbackWidget() => Container(
+    color: AppTheme.greenMid,
+    child: Center(child: Text(
+      file.isPhoto ? '📷' : file.isVideo ? '🎬' : '📄',
+      style: const TextStyle(fontSize: 30),
+    )),
   );
 }
 
