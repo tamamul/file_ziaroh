@@ -35,7 +35,7 @@ jobs:
         continue-on-error: true
 
       - name: Build Debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --verbose 2>&1 | tail -100
 
       - name: Find APK location
         run: find /home/runner/work -name "*.apk" 2>/dev/null || echo "No APK found"
