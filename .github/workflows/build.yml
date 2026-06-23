@@ -1,81 +1,71 @@
-name: Build APK
+name: Build Flutter APK (Clean CI)
 
 on:
-  push:
-    branches:
-      - main
-      - develop
+push:
+branches:
+- main
+- develop
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+build:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v4
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+  - name: Setup Java 17
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: '17'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.27.0'
-          channel: 'stable'
-          cache: true
+  # Flutter stabil terbaru (hindari mismatch Kotlin/AGP)
+  - name: Setup Flutter
+    uses: subosito/flutter-action@v2
+    with:
+      flutter-version: 'stable'
+      cache: true
 
-      - name: Get Dependencies
-        run: flutter pub get
+  - name: Clean Project
+    run: flutter clean
 
-      - name: Analyze Project
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
-        continue-on-error: true
+  - name: Get Dependencies
+    run: flutter pub get
 
-      - name: Build Debug APK
-        run: flutter build apk --debug --verbose 2>&1 | tail -100
+  - name: Analyze (non-blocking)
+    run: flutter analyze --no-fatal-infos --no-fatal-warnings
+    continue-on-error: true
 
-      - name: Find APK location
-        run: find /home/runner/work -name "*.apk" 2>/dev/null || echo "No APK found"
+  # DEBUG BUILD
+  - name: Build Debug APK
+    run: flutter build apk --debug --verbose
 
-      - name: List build output
-        run: ls -la build/app/outputs/ 2>/dev/null || echo "Output dir not found"
+  - name: Upload Debug APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: fileziaroh-debug-${{ github.run_number }}
+      path: build/app/outputs/flutter-apk/app-debug.apk
 
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: fileziaroh-debug-${{ github.run_number }}
-          path: android/app/build/outputs/flutter-apk/app-debug.apk
+  # RELEASE BUILD (main only)
+  - name: Build Release APK
+    if: github.ref == 'refs/heads/main'
+    run: flutter build apk --release
 
-      - name: Check Kotlin
-        run: |
-          ./gradlew --version
-          grep -R "kotlin" android
+  - name: Upload Release APK
+    if: github.ref == 'refs/heads/main'
+    uses: actions/upload-artifact@v4
+    with:
+      name: fileziaroh-release-${{ github.run_number }}
+      path: build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Build Release APK
-        if: github.ref == 'refs/heads/main'
-        run: flutter build apk --release --split-per-abi
-
-      - name: Upload Release APKs
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: fileziaroh-release-${{ github.run_number }}
-          path: |
-            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-            build/app/outputs/flutter-apk/app-x86_64-release.apk
-
-      - name: Create Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.run_number }}
-          name: "File Ziaroh v1.0.${{ github.run_number }}"
-          files: |
-            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Optional: GitHub Release
+  - name: Create GitHub Release
+    if: github.ref == 'refs/heads/main'
+    uses: softprops/action-gh-release@v2
+    with:
+      tag_name: build-${{ github.run_number }}
+      name: "File Ziaroh Build ${{ github.run_number }}"
+      files: build/app/outputs/flutter-apk/app-release.apk
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
