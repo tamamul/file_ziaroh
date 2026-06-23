@@ -26,11 +26,6 @@ jobs:
           flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
-      - name: Clean Flutter
-        run: flutter clean
-
-      - name: Remove Gradle Cache
-        run: rm -rf ~/.gradle/caches
 
       - name: Get Dependencies
         run: flutter pub get
@@ -45,7 +40,7 @@ jobs:
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: marsa-cbt-debug-${{ github.run_number }}
+          name: fileziaroh-debug-${{ github.run_number }}
           path: build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Build Release APK
@@ -56,8 +51,20 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
-          name: marsa-cbt-release-${{ github.run_number }}
+          name: fileziaroh-release-${{ github.run_number }}
           path: |
             build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
             build/app/outputs/flutter-apk/app-x86_64-release.apk
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "File Ziaroh v1.0.${{ github.run_number }}"
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
