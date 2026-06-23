@@ -20,12 +20,13 @@ android {
 
     defaultConfig {
         applicationId = "com.marsa.fileziaroh"
-        minSdk = 21
-        targetSdk = 35
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
     }
+    
 
     buildTypes {
         release {
