@@ -49,6 +49,11 @@ jobs:
           name: fileziaroh-debug-${{ github.run_number }}
           path: android/app/build/outputs/flutter-apk/app-debug.apk
 
+      - name: Check Kotlin
+        run: |
+          ./gradlew --version
+          grep -R "kotlin" android
+
       - name: Build Release APK
         if: github.ref == 'refs/heads/main'
         run: flutter build apk --release --split-per-abi
