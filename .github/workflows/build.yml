@@ -37,7 +37,7 @@ jobs:
       - name: Build Debug APK
         run: flutter build apk --debug
 
-- name: Find APK location
+      - name: Find APK location
         run: find /home/runner/work -name "*.apk" 2>/dev/null || echo "No APK found"
 
       - name: List build output
