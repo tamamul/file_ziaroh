@@ -37,6 +37,12 @@ jobs:
       - name: Build Debug APK
         run: flutter build apk --debug
 
+- name: Find APK location
+        run: find /home/runner/work -name "*.apk" 2>/dev/null || echo "No APK found"
+
+      - name: List build output
+        run: ls -la build/app/outputs/ 2>/dev/null || echo "Output dir not found"
+
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
